@@ -1,20 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Pollution Detection AI — Teachable Machine</title>
+<style>
+    body {
+        margin: 0;
+        font-family: "Orbitron", sans-serif;
+        background: radial-gradient(circle at top, #0a0f1f, #02040a);
+        color: #e0f7fa;
+        text-align: center;
+        padding: 20px;
+    }
+
+    h1 {
+        font-size: 2.5rem;
+        color: #76e6ff;
+        text-shadow: 0 0 10px #00eaff;
+    }
+
+    #container {
+        max-width: 900px;
+        margin: auto;
+        padding: 20px;
+        border-radius: 20px;
+        background: rgba(0, 20, 40, 0.45);
+        box-shadow: 0 0 25px #00eaff66;
+        border: 1px solid #00eaff44;
+    }
+
+    #pollution-indicator {
+        margin-top: 20px;
+        padding: 20px;
+        font-size: 1.5rem;
+        border-radius: 12px;
+        background: rgba(0, 255, 255, 0.08);
+        border: 1px solid #00eaff;
+        box-shadow: 0 0 15px #00eaff;
+        display: inline-block;
+        min-width: 260px;
+        transition: 0.4s ease;
+    }
+
+    .light { box-shadow: 0 0 20px #00ff88; border-color: #00ff88; color: #00ff88; }
+    .moderate { box-shadow: 0 0 20px #ffee00; border-color: #ffee00; color: #ffee00; }
+    .heavy { box-shadow: 0 0 20px #ff0066; border-color: #ff0066; color: #ff0066; }
+
+    #label-container div {
+        margin: 3px 0;
+    }
+
+    button {
+        padding: 10px 20px;
+        margin: 10px;
+        font-size: 1rem;
+        font-family: inherit;
+        border-radius: 10px;
+        border: none;
+        cursor: pointer;
+        box-shadow: 0 0 10px #00eaff;
+        background: #001f33;
+        color: #76e6ff;
+    }
+
+    input[type="file"] {
+        margin-top: 15px;
+        color: #76e6ff;
+    }
+
+    #uploaded-image {
+        margin-top: 20px;
+        max-width: 300px;
+        border: 1px solid #00eaff33;
+        box-shadow: 0 0 20px #00eaff55;
+    }
+
+    .section-title {
+        color: #7dfc8d;
+        font-size: 1.7rem;
+        margin-top: 30px;
+        text-shadow: 0 0 8px #00ff99;
+    }
+
+    .script-box {
+        background: rgba(0, 255, 140, 0.08);
+        border: 1px solid #00ffbb;
+        border-radius: 15px;
+        padding: 20px;
+        margin-top: 30px;
+        text-align: left;
+        line-height: 1.5rem;
+        box-shadow: 0 0 15px #00ffbb55;
+    }
+</style>
+</head>
+<body>
+
+<h1>Pollution Level Detection AI</h1>
+
+<div id="container">
+
+    <p class="section-title">🌎 What This Does</p>
+    <p>
+        This AI uses a Teachable Machine model to detect whether outdoor pollution levels look 
+        <strong>light</strong>, <strong>moderate</strong>, or <strong>heavy</strong> based on the sky’s appearance.  
+        It can help students, hikers, environmental researchers, or anyone who wants a quick visual estimate of air quality.
+    </p>
+
+    <!-- VIDEO SCRIPT SECTION -->
+    <p class="section-title">🎥 Video Script</p>
+    <div class="script-box">
+        <p><strong>Intro:</strong>  
+        “Hi, this is my Pollution Detection AI project. I created a Teachable Machine model that can classify outdoor pollution levels as light, moderate, or heavy just by looking at the sky. The goal of this project is to show how AI can help us understand environmental conditions using only images.”</p>
+
+        <p><strong>What Problem It Addresses:</strong>  
+        “Air pollution is a major issue that affects health, visibility, and the environment. But sometimes people don’t have access to sensors or air-quality websites — especially when outdoors or in areas with limited resources. My idea was to create a simple tool that can give a visual estimate of how polluted the air might be, using just a webcam or a picture.”</p>
+
+        <p><strong>Model Training:</strong>  
+        “To build this, I trained a Teachable Machine model with three categories: Light Pollution, Moderate Pollution, and Heavy Pollution. I collected example images of different skies and labeled them. Teachable Machine learned the patterns and features, and then exported a model that I embedded into my website.”</p>
+
+        <p><strong>Demo:</strong>  
+        “Here you can see the website running. When I start the webcam, the model analyzes the sky in real time and predicts the pollution level. The indicator changes color — green for light, yellow for moderate, and red for heavy pollution. I can also upload a photo, and the model will classify that too.”</p>
+
+        <p><strong>Conclusion:</strong>  
+        “This project shows how machine learning can help us quickly interpret environmental data just from visual clues. In the future, this kind of tool could be used by students, hikers, or anyone who needs a fast estimate of air quality. Thanks for watching!”</p>
+    </div>
+
+    <button onclick="init()">📸 Start Webcam</button>
+    <div id="webcam-container"></div>
+
+    <p class="section-title">📤 Or Upload an Image</p>
+    <input type="file" accept="image/*" id="imageUpload" onchange="handleImageUpload(event)">
+    <br>
+    <img id="uploaded-image" style="display:none;" />
+
+    <div id="pollution-indicator">Awaiting input...</div>
+
+    <div id="label-container"></div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+
 <script>
 const URL = "./my_model/";
 let model, webcam, labelContainer, maxPredictions;
-let modelLoaded = false;
 
-// Load model once on page load
-window.addEventListener("load", async () => {
+// Load model
+async function loadModel() {
     const modelURL = URL + "model.json";
     const metadataURL = URL + "metadata.json";
     model = await tmImage.load(modelURL, metadataURL);
     maxPredictions = model.getTotalClasses();
-    modelLoaded = true;
-});
+}
 
-// Start webcam
 async function init() {
-    if (!modelLoaded) return alert("Model is still loading. Try again in 1–2 seconds.");
+    await loadModel();
 
     const flip = true;
     webcam = new tmImage.Webcam(200, 200, flip);
@@ -22,9 +164,7 @@ async function init() {
     await webcam.play();
     window.requestAnimationFrame(loop);
 
-    document.getElementById("webcam-container").innerHTML = "";
     document.getElementById("webcam-container").appendChild(webcam.canvas);
-
     labelContainer = document.getElementById("label-container");
     labelContainer.innerHTML = "";
 
@@ -39,10 +179,7 @@ async function loop() {
     window.requestAnimationFrame(loop);
 }
 
-// Predict helper
 async function predict(input) {
-    if (!modelLoaded) return;
-
     const prediction = await model.predict(input);
     updateIndicator(prediction);
 
@@ -52,16 +189,15 @@ async function predict(input) {
     }
 }
 
-// Update neon pollution indicator
 function updateIndicator(prediction) {
     const indicator = document.getElementById("pollution-indicator");
     indicator.className = "";
 
-    let highestClass = prediction.reduce((prev, curr) =>
-        prev.probability > curr.probability ? prev : curr
+    let highestClass = prediction.reduce((prev, current) =>
+        prev.probability > current.probability ? prev : current
     );
 
-    const cls = highestClass.className.toLowerCase();
+    let cls = highestClass.className.toLowerCase();
     indicator.textContent = "Pollution Level: " + highestClass.className;
 
     if (cls.includes("light")) indicator.classList.add("light");
@@ -69,18 +205,18 @@ function updateIndicator(prediction) {
     else indicator.classList.add("heavy");
 }
 
-// Handle uploaded images
 async function handleImageUpload(event) {
-    if (!modelLoaded) return alert("Model still loading. Try again in 1–2 seconds.");
+    await loadModel();
 
     const img = document.getElementById("uploaded-image");
     img.src = URL.createObjectURL(event.target.files[0]);
     img.style.display = "block";
 
-    // Let browser finish drawing the image
-    await new Promise(res => setTimeout(res, 80));
-
-    // Run prediction
-    await predict(img);
+    img.onload = async () => {
+        await predict(img);
+    };
 }
 </script>
+
+</body>
+</html>
