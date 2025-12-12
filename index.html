@@ -107,30 +107,20 @@
         It can help students, hikers, environmental researchers, or anyone who wants a quick visual estimate of air quality.
     </p>
 
-    <!-- VIDEO SCRIPT SECTION -->
     <p class="section-title">🎥 Video Script</p>
     <div class="script-box">
-        <p><strong>Intro:</strong>  
-        “Hi, this is my Pollution Detection AI project. I created a Teachable Machine model that can classify outdoor pollution levels as light, moderate, or heavy just by looking at the sky. The goal of this project is to show how AI can help us understand environmental conditions using only images.”</p>
-
-        <p><strong>What Problem It Addresses:</strong>  
-        “Air pollution is a major issue that affects health, visibility, and the environment. But sometimes people don’t have access to sensors or air-quality websites — especially when outdoors or in areas with limited resources. My idea was to create a simple tool that can give a visual estimate of how polluted the air might be, using just a webcam or a picture.”</p>
-
-        <p><strong>Model Training:</strong>  
-        “To build this, I trained a Teachable Machine model with three categories: Light Pollution, Moderate Pollution, and Heavy Pollution. I collected example images of different skies and labeled them. Teachable Machine learned the patterns and features, and then exported a model that I embedded into my website.”</p>
-
-        <p><strong>Demo:</strong>  
-        “Here you can see the website running. When I start the webcam, the model analyzes the sky in real time and predicts the pollution level. The indicator changes color — green for light, yellow for moderate, and red for heavy pollution. I can also upload a photo, and the model will classify that too.”</p>
-
-        <p><strong>Conclusion:</strong>  
-        “This project shows how machine learning can help us quickly interpret environmental data just from visual clues. In the future, this kind of tool could be used by students, hikers, or anyone who needs a fast estimate of air quality. Thanks for watching!”</p>
+        <p><strong>Intro:</strong> "Hi, this is my Pollution Detection AI project..."</p>
+        <p><strong>What Problem It Addresses:</strong> "Air pollution is a major issue..."</p>
+        <p><strong>Model Training:</strong> "To build this, I trained a Teachable Machine model..."</p>
+        <p><strong>Demo:</strong> "Here you can see the website running..."</p>
+        <p><strong>Conclusion:</strong> "This project shows how machine learning can help..."</p>
     </div>
 
-    <button onclick="init()">📸 Start Webcam</button>
+    <button>📸 Start Webcam</button>
     <div id="webcam-container"></div>
 
     <p class="section-title">📤 Or Upload an Image</p>
-    <input type="file" accept="image/*" id="imageUpload" onchange="handleImageUpload(event)">
+    <input type="file" accept="image/*" id="imageUpload">
     <br>
     <img id="uploaded-image" style="display:none;" />
 
@@ -138,85 +128,6 @@
 
     <div id="label-container"></div>
 </div>
-
-<!-- Scripts -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
-
-<script>
-const URL = "./my_model/";
-let model, webcam, labelContainer, maxPredictions;
-
-// Load model
-async function loadModel() {
-    const modelURL = URL + "model.json";
-    const metadataURL = URL + "metadata.json";
-    model = await tmImage.load(modelURL, metadataURL);
-    maxPredictions = model.getTotalClasses();
-}
-
-async function init() {
-    await loadModel();
-
-    const flip = true;
-    webcam = new tmImage.Webcam(200, 200, flip);
-    await webcam.setup();
-    await webcam.play();
-    window.requestAnimationFrame(loop);
-
-    document.getElementById("webcam-container").appendChild(webcam.canvas);
-    labelContainer = document.getElementById("label-container");
-    labelContainer.innerHTML = "";
-
-    for (let i = 0; i < maxPredictions; i++) {
-        labelContainer.appendChild(document.createElement("div"));
-    }
-}
-
-async function loop() {
-    webcam.update();
-    await predict(webcam.canvas);
-    window.requestAnimationFrame(loop);
-}
-
-async function predict(input) {
-    const prediction = await model.predict(input);
-    updateIndicator(prediction);
-
-    for (let i = 0; i < maxPredictions; i++) {
-        labelContainer.childNodes[i].innerHTML =
-            prediction[i].className + ": " + prediction[i].probability.toFixed(2);
-    }
-}
-
-function updateIndicator(prediction) {
-    const indicator = document.getElementById("pollution-indicator");
-    indicator.className = "";
-
-    let highestClass = prediction.reduce((prev, current) =>
-        prev.probability > current.probability ? prev : current
-    );
-
-    let cls = highestClass.className.toLowerCase();
-    indicator.textContent = "Pollution Level: " + highestClass.className;
-
-    if (cls.includes("light")) indicator.classList.add("light");
-    else if (cls.includes("moderate")) indicator.classList.add("moderate");
-    else indicator.classList.add("heavy");
-}
-
-async function handleImageUpload(event) {
-    await loadModel();
-
-    const img = document.getElementById("uploaded-image");
-    img.src = URL.createObjectURL(event.target.files[0]);
-    img.style.display = "block";
-
-    img.onload = async () => {
-        await predict(img);
-    };
-}
-</script>
 
 </body>
 </html>
